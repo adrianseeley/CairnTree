@@ -31,7 +31,7 @@
     {
         List<(List<float> input, int output)> mnistTrain = ReadMNIST("D:/data/mnist_train.csv", max: 1000);
         List<(List<float> input, int output)> mnistTest = ReadMNIST("D:/data/mnist_test.csv", max: 1000);
-        Tree tree = Tree.Create(mnistTrain, minLeaf: 3);
+        Tree tree = Tree.Create(mnistTrain, minLeaf: 1);
         int correct = 0;
         int incorrect = 0;
         foreach ((List<float> input, int output) in mnistTest)

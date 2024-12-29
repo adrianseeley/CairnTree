@@ -7,7 +7,7 @@
     public bool homogeneous;
     public Dictionary<int, int> histogram;
     public int estimate;
-    public float gini;
+    public float error;
 
     public static Tree Create(List<(List<float> input, int output)> samples, int minLeaf)
     {
@@ -37,10 +37,10 @@
 
         histogram = CalculateHistogram(samples, indices);
         estimate = CalculateEstimate(histogram);
-        gini = GINI(samples.Count, histogram);
+        error = Misclassifications(samples.Count, estimate, histogram);
 
         // if the GINI is 0, we are done
-        if (gini == 0)
+        if (error == 0)
         {
             homogeneous = true;
             return;
@@ -51,7 +51,7 @@
         }
 
         // seach for best cairns
-        float bestSplitGINI = gini;
+        float bestSplitError = error;
         int bestLeftCairnIndex = -1;
         int bestRightCairnIndex = -1;
         List<int> leftIndices = new List<int>(indices.Count);
@@ -82,14 +82,16 @@
                 }
                 Dictionary<int, int> leftHistogram = CalculateHistogram(samples, leftIndices);
                 Dictionary<int, int> rightHistogram = CalculateHistogram(samples, rightIndices);
-                float leftGINI = GINI(leftIndices.Count, leftHistogram);
-                float rightGINI = GINI(rightIndices.Count, rightHistogram);
+                int leftEstimate = CalculateEstimate(leftHistogram);
+                int rightEstimate = CalculateEstimate(rightHistogram);
+                float leftError = Misclassifications(leftIndices.Count, leftEstimate, leftHistogram);
+                float rightError = Misclassifications(rightIndices.Count, rightEstimate, rightHistogram);
                 float leftWeight = (float)leftIndices.Count / (float)indices.Count;
                 float rightWeight = (float)rightIndices.Count / (float)indices.Count;
-                float splitGINI = (leftWeight * leftGINI) + (rightWeight * rightGINI);
-                if (splitGINI < bestSplitGINI)
+                float splitError = (leftWeight * leftError) + (rightWeight * rightError);
+                if (splitError < bestSplitError)
                 {
-                    bestSplitGINI = splitGINI;
+                    bestSplitError = splitError;
                     bestLeftCairnIndex = leftIndex;
                     bestRightCairnIndex = rightIndex;
                 }
@@ -98,7 +100,7 @@
         Console.WriteLine();
 
         // if we found an improvement, recurse
-        if (bestSplitGINI < gini)
+        if (bestSplitError < error)
         {
             leftIndices.Clear();
             rightIndices.Clear();
@@ -161,7 +163,7 @@
         return bestOutput;
     }
 
-    private float GINI(int count, Dictionary<int, int> histogram)
+    private float GINI(int count, int estimate, Dictionary<int, int> histogram)
     {
         float sumOfSquaredProbabilities = 0;
         foreach (KeyValuePair<int, int> pair in histogram)
@@ -171,6 +173,12 @@
         }
         float gini = 1 - sumOfSquaredProbabilities;
         return gini;
+    }
+
+    private float Misclassifications(int count, int estimate, Dictionary<int, int> histogram)
+    {
+        int misclassifications = count - histogram[estimate];
+        return (float)misclassifications / (float)count;
     }
 
     public int Predict(List<float> input)
